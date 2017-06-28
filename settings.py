@@ -1,6 +1,3 @@
-DEBUG = True
-
-# Joystick
-BASE_R = 150 # Radius of joystick base
-STICK_R = 40 # Radius of joystick stick
-DIST = 125
+# D-pad
+D_SIZE = (55, 55)
+D_ALPHA = 0.2
