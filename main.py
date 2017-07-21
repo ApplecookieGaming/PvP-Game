@@ -3,11 +3,13 @@ from sprites import *
 from d_pad import *
 from settings import *
 
+
 class Main (Scene):
 	def setup(self):
-		self.background_color = 'black'
+		self.background_color = '#818181'
 		
 		self.d_pads = []
+		self.bullets = []
 		
 		self.setup_player1()
 		self.setup_player2()
@@ -21,6 +23,13 @@ class Main (Scene):
 		
 		self.player1.update()
 		self.player2.update()
+		
+		for b in self.bullets:
+			pos = b.get_pos()
+			if pos.x < 0 or pos.x > self.size.w or pos.y < 0 or pos.y > self.size.h:
+				self.bullets.remove(b)
+				b.remove_bullet()
+			b.update()
 		
 	def setup_player1(self):
 		# Create Player 1
@@ -48,11 +57,14 @@ class Main (Scene):
 		self.p2_dR.setup(self, (150, self.size.h - 100), 2, 'R')
 		self.d_pads.append(self.p2_dR)
 		
-	def get_player_direction(self, side, player_type):
+	def get_pad_direction(self, side, player_type):
 		for i in range(len(self.d_pads)):
 			if self.d_pads[i].get_side() == side:
 				if self.d_pads[i].get_joystick_type() == player_type:
 					return self.d_pads[i].get_direction()
+		
+	def append_bullet_list(self, bullet):
+		self.bullets.append(bullet)
 
 if __name__ == '__main__':
 	run(Main(), orientation=PORTRAIT, show_fps=True)
