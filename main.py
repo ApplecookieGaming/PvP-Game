@@ -6,7 +6,7 @@ from settings import *
 
 class Main (Scene):
 	def setup(self):
-		self.background_color = '#818181'
+		self.background_color = '#000000'
 		
 		self.d_pads = []
 		self.bullets = []
@@ -27,8 +27,7 @@ class Main (Scene):
 		for b in self.bullets:
 			pos = b.get_pos()
 			if pos.x < 0 or pos.x > self.size.w or pos.y < 0 or pos.y > self.size.h:
-				self.bullets.remove(b)
-				b.remove_bullet()
+				self.kill_bullet(b)
 			b.update()
 		
 	def setup_player1(self):
@@ -65,6 +64,13 @@ class Main (Scene):
 		
 	def append_bullet_list(self, bullet):
 		self.bullets.append(bullet)
+	
+	def get_bullet_list(self):
+		return self.bullets
+	
+	def kill_bullet(self, b):
+		self.bullets.remove(b)
+		b.remove_bullet()
 
 if __name__ == '__main__':
 	run(Main(), orientation=PORTRAIT, show_fps=True)
