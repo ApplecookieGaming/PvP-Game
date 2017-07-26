@@ -13,16 +13,29 @@ class Player (Node):
 		self.player.position = pos
 		self.game.add_child(self.player)
 		
-		self.health = 100
+		self.health = MAX_HEALTH
+		self.energy = MAX_ENERGY
 		self.cooldown = 0
 		
 		if self.player_type == 1:
-			self.bar1 = HealthBar()
-			self.bar1.setup(self.game, '#00ddff', '#0016ff', (self.game.size.w / 2, 200), self.player_type)
+			# Health bar
+			self.h_bar1 = ResourceBar()
+			h_bar1_pos = (self.game.size.w / 2, BAR_DIST)
+			self.h_bar1.setup(self.game, self, h_bar1_pos, self.player_type, 'health')
+			
+			# Energy bar
+			self.e_bar1 = ResourceBar()
+			e_bar1_pos = (self.game.size.w / 2, BAR_DIST)
+			self.e_bar1.setup(self.game, self, e_bar1_pos, self.player_type, 'energy')
 			
 		elif self.player_type == 2:
-			self.bar2 = HealthBar()
-			self.bar2.setup(self.game, '#ff3c00', '#ff0000', (self.game.size.w / 2, 550), self.player_type)
+			self.h_bar2 = ResourceBar()
+			h_bar2_pos = (self.game.size.w / 2, self.game.size.h - BAR_DIST)
+			self.h_bar2.setup(self.game, self, h_bar2_pos, self.player_type, 'health')
+			
+			self.e_bar2 = ResourceBar()
+			e_bar2_pos = (self.game.size.w / 2, self.game.size.h - BAR_DIST)
+			self.e_bar2.setup(self.game, self, e_bar2_pos, self.player_type, 'energy')
 		
 		self.rot = 0
 		self.vel = Vector2(0, 0)
@@ -43,6 +56,16 @@ class Player (Node):
 		
 		self.player.position += self.vel * self.acc  # Adds friction
 		self.player.rotation = self.rot
+		
+		self.bullet_collision()
+		
+		# Health
+		if self.player_type == 1:
+			self.h_bar1.update()
+			self.e_bar1.update()
+		elif self.player_type == 2:
+			self.h_bar2.update()
+			self.e_bar2.update()
 	
 	# Function to rotate player in the correct direction
 	def rotate(self, deg):
@@ -159,10 +182,27 @@ class Player (Node):
 			elif right_pad == 'right_up':
 				self.rot = self.rotate(-45)
 	
+	def bullet_collision(self):
+		bullets = Main.get_bullet_list(self.game)
+		
+		for b in bullets:
+			if b.get_type() != self.player_type:
+				bullet_rect = b.get_bbox()
+				
+				if self.player.bbox.intersects(bullet_rect):
+					self.health -= BULLET_DAMG
+					Main.kill_bullet(self.game, b)
+	
 	def get_player(self, player_type):
 		if self.player_type == player_type:
 			return self.player
+	
+	def get_health(self, player_type):
+		return self.health
 		
+	def get_energy(self, player_type):
+		return self.energy
+	
 	# Code from https://stackoverflow.com/questions/2272149/round-to-5-or-other-number-in-python
 	# By Alok Singhal
 	# This is used to round numbers to a base, in this case, 5
@@ -176,8 +216,9 @@ class Bullet (Node):
 		self.game = game
 		self.player_class = player_class
 		self.player = Player.get_player(self.player_class, bullet_type)
+		self.bullet_type = bullet_type
 		
-		self.bullet = SpriteNode(color='#f3ff00', size=(10, 20))
+		self.bullet = SpriteNode(color=BULLET_COL, size=(10, 10))
 		self.bullet.position = self.player.position + self.rotate_number(self.player.size.h / 2, self.player.rotation)
 		self.bullet.rotation = self.player.rotation
 		self.game.add_child(self.bullet)
@@ -193,37 +234,68 @@ class Bullet (Node):
 		
 		x *= -1  # Reverse sign
 		
-		vec = Vector2(x, y)
-		return vec
+		return Vector2(x, y)
 	
 	def get_pos(self):
 		return self.bullet.position
 	
 	def remove_bullet(self):
 		self.bullet.remove_from_parent()
-
-
-class HealthBar (Node):
-	def setup(self, game, fore, back, pos, health_type):
-		self.game = game
-		
-		bar_size = (self.game.size.w / 2 - 70, 20)
-		
-		self.back = SpriteNode(color=back, size=bar_size)
-		self.fore = SpriteNode(color=fore, size=bar_size)
-		
-		self.back.anchor_point = (1, 0)
-		self.fore.anchor_point = (1, 0)
 	
-		self.back.position = pos
-		self.fore.position = pos
+	def get_type(self):
+		return self.bullet_type
+	
+	def get_bbox(self):
+		return self.bullet.bbox
+
+
+class ResourceBar (Node):
+	def setup(self, game, player_class, pos, resource_type, type):
+		self.game = game
+		self.player_class = player_class
+		self.resource_type = resource_type
+		self.type = type
 		
-		if health_type == 2:
+		bar_size = (self.game.size.w / 2 - 70, BAR_HEIGHT)
+		
+		if type == 'health':
+			self.back = SpriteNode(color=HB_COL, size=bar_size)
+			self.fore = SpriteNode(color=HF_COL, size=bar_size)
+			
+			if resource_type == 1:
+				self.back.anchor_point = (1, 0)
+				self.fore.anchor_point = (1, 0)
+				
+			elif resource_type == 2:
+				self.back.anchor_point = (1, 1)
+				self.fore.anchor_point = (1, 1)
+			
+		elif type == 'energy':
+			self.back = SpriteNode(color=EB_COL, size=bar_size)
+			self.fore = SpriteNode(color=EF_COL, size=bar_size)
+			
+			if resource_type == 1:
+				self.back.anchor_point = (0, 0)
+				self.fore.anchor_point = (0, 0)
+				
+			elif resource_type == 2:
+				self.back.anchor_point = (0, 1)
+				self.fore.anchor_point = (0, 1)
+		
+		if resource_type == 2:
 			self.back.x_scale = -1
 			self.fore.x_scale = -1
+		
+		self.back.position = pos
+		self.fore.position = pos
 		
 		self.game.add_child(self.back)
 		self.game.add_child(self.fore)
 	
 	def update(self):
-		pass
+		if self.type == 'health':
+			health = Player.get_health(self.player_class, self.resource_type)
+			self.fore.size = (self.back.size.x * (health / MAX_HEALTH), self.back.size.y)
+		elif self.type == 'energy':
+			energy = Player.get_energy(self.player_class, self.resource_type)
+			self.fore.size = (self.back.size.x * (energy / MAX_ENERGY), self.back.size.y)
